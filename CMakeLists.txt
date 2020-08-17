@@ -8,6 +8,7 @@ set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_PROCESSOR atmega328p)
 set(CMAKE_CROSSCOMPILING 1)
+set(SERIAL_PERIOD 38400)
 
 set(CMAKE_C_COMPILER avr-gcc)
 set(SOURCES src/main.c)
@@ -27,5 +28,12 @@ add_custom_target(hex ALL DEPENDS ${PROJECT_NAME}.hex)
 add_custom_command(OUTPUT ${PROJECT_NAME}.hex COMMAND ${CMAKE_C_OBJCOPY} ARGS -R .eeprom -O ihex ${PROJECT_NAME}.elf ${PROJECT_NAME}.hex DEPENDS ${PROJECT_NAME}.elf )
 
 add_custom_target(flash DEPENDS ${PROJECT_NAME}.hex)
-add_custom_command(TARGET flash USES_TERMINAL COMMAND "avrdude -c stk500v2 -P $(pavr2cmd --prog-port) -p ${CMAKE_SYSTEM_PROCESSOR} -U flash:w:${PROJECT_NAME}.hex:i")
+add_custom_command(TARGET flash USES_TERMINAL COMMAND
+	${CMAKE_COMMAND} -E env bash -c "avrdude -c stk500v2 -P $(pavr2cmd --prog-port) -p ${CMAKE_SYSTEM_PROCESSOR} -U flash:w:${PROJECT_NAME}.hex:i" 
+	VERBATIM)
+
+add_custom_target(serial
+	COMMAND ${CMAKE_COMMAND} -E env bash -c "stty -F $(pavr2cmd --ttl-port) ${SERIAL_PERIOD}"
+	COMMAND ${CMAKE_COMMAND} -E env bash -c "cat $(pavr2cmd --ttl-port)"
+	VERBATIM)
 
